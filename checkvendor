@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+#
+# Set Functions
+usage()
+{
+  echo "MAC Vendor Help"
+  echo "mac_vendor -a 'MAC Address' | Get the vendor of the specified address."
+  echo "mac_vendor -s 'MAC Address' | Silent, only output result."
+  exit 0
+}
+
+get_database()
+{
+  # Read Database
+   database="$(cat /usr/share/Vendoret/vendors.txt)"
+}
+
+format_vendor_address()
+{
+  [[ -n $1 ]] && vendor_address="$1"
+  
+  vendor_address="$(echo "$vendor_address" | tr -d ':' | tr '[:lower:]' '[:upper:]')"
+  if [[ ${#vendor_address} == "6" ]]; then
+    return
+  else
+    vendor_address="$(echo "$vendor_address" | cut -c1-6)"
+  fi
+}
+
+# Argument 
+while getopts ":s:a:h" opt; do
+  case $opt in
+    s )  silent=true; vendor_address="$OPTARG" ;;
+    a )  vendor_address="$OPTARG" ;;
+    h )  usage ;;
+    \?)  echo "[Error] Invalid option: -$OPTARG" ; exit 1 ;;
+  esac
+done
+
+# Adresa e vendorit
+[[ -z $vendor_address && -n $1 ]] && vendor_address="$1"
+[[ -z $vendor_address ]] && read -p "Sheno MAC adresen [##:##:##:##:##:##]: " vendor_address
+format_vendor_address
+[[ ${#vendor_address} < 6 || ! $vendor_address =~ ^[0-9A-F]{6}$ ]] \
+  && echo "[Error 65:$LINENO] The address '$vendor_address' was invalid." && exit 65
+
+# Thirret Databaza
+[[ $silent != true ]] && echo "Ne process..."
+get_database
+vendor="$(echo "$database" | grep -E "$vendor_address.*(base 16)" | awk '{for(i=4;i<NF;i++) printf"%s",$i OFS;if(NF)printf"%s",$NF;printf ORS}')"
+[[ -z $vendor ]] && vendor="I pa njohur ose false"
+
+# Print Result
+[[ $silent != true ]] && echo -n "Prefix i MAC adreses "
+echo -n "$vendor_address "
+[[ $silent != true ]] && echo -n "i takon "
+echo "$vendor"
+
+exit 0
